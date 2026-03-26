@@ -66,23 +66,20 @@ export function Heatmap({ dailyStats, weeks = 12 }: HeatmapProps) {
     return "bg-primary/80";
   };
 
-  // Compute month labels
+  // Compute month labels — place at the column containing the 1st of each month
   const monthLabels = useMemo(() => {
     const labels: { label: string; col: number }[] = [];
     let lastMonth = -1;
     for (const cell of grid) {
-      if (cell.row === 0) {
-        const month = new Date(cell.date + "T00:00:00").getMonth();
-        if (month !== lastMonth) {
-          labels.push({
-            label: new Date(cell.date + "T00:00:00").toLocaleDateString(
-              undefined,
-              { month: "short" }
-            ),
-            col: cell.col,
-          });
-          lastMonth = month;
-        }
+      if (cell.count < 0) continue; // skip future spacers
+      const d = new Date(cell.date + "T00:00:00");
+      const month = d.getMonth();
+      if (month !== lastMonth) {
+        labels.push({
+          label: d.toLocaleDateString(undefined, { month: "short" }),
+          col: cell.col,
+        });
+        lastMonth = month;
       }
     }
     return labels;
@@ -95,7 +92,7 @@ export function Heatmap({ dailyStats, weeks = 12 }: HeatmapProps) {
         <div
           className="grid gap-[3px]"
           style={{
-            gridTemplateColumns: `repeat(${weeks}, 1fr)`,
+            gridTemplateColumns: `repeat(${weeks}, 13px)`,
           }}
         >
           {Array.from({ length: weeks }).map((_, i) => {
