@@ -32,16 +32,23 @@ export default function StatsPage() {
   }, [sessions, dailyStats]);
 
   const weeklyData = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    // Find Monday of the current week (JS getDay: 0=Sun, 1=Mon)
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+
     const days: { label: string; date: string; count: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
       const dateStr = d.toISOString().split("T")[0];
       const dayStats = dailyStats.find((ds) => ds.date === dateStr);
       days.push({
         label: d.toLocaleDateString(undefined, { weekday: "short" }),
         date: dateStr,
-        count: dayStats?.sessionsCompleted ?? 0,
+        count: d > today ? -1 : (dayStats?.sessionsCompleted ?? 0),
       });
     }
     return days;
@@ -106,23 +113,31 @@ export default function StatsPage() {
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
                 This Week
               </h2>
-              <div className="flex items-end justify-between gap-2 h-32 px-2">
+              <div className="flex items-end gap-2 h-32 px-2">
                 {weeklyData.map((day) => (
                   <div
                     key={day.date}
-                    className="flex flex-col items-center gap-1 flex-1"
+                    className="flex flex-col items-end flex-1 h-full"
                   >
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {day.count || ""}
-                    </span>
-                    <div
-                      className="w-full rounded-t-sm bg-primary/80 transition-all duration-300"
-                      style={{
-                        height: `${day.count > 0 ? Math.max((day.count / maxWeekly) * 100, 8) : 4}%`,
-                        opacity: day.count > 0 ? 1 : 0.2,
-                      }}
-                    />
-                    <span className="text-xs text-muted-foreground">
+                    <div className="flex flex-col items-center gap-1 w-full flex-1 justify-end">
+                      {day.count > 0 && (
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {day.count}
+                        </span>
+                      )}
+                      <div
+                        className="w-full rounded-t-sm bg-primary/80 transition-all duration-300"
+                        style={{
+                          height: day.count < 0
+                            ? "0%"
+                            : day.count > 0
+                              ? `${Math.max((day.count / maxWeekly) * 100, 8)}%`
+                              : "4%",
+                          opacity: day.count > 0 ? 1 : day.count < 0 ? 0 : 0.2,
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground mt-1 w-full text-center">
                       {day.label}
                     </span>
                   </div>
