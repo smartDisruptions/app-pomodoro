@@ -2,20 +2,18 @@
 
 import { useEffect, useRef } from "react";
 
-interface GlowPoint {
+interface TrailPoint {
   x: number;
   y: number;
-  opacity: number;
-  radius: number;
+  age: number; // 0 = newest, increases each frame
 }
 
 export function MouseGlow() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const pointsRef = useRef<GlowPoint[]>([]);
+  const trailRef = useRef<TrailPoint[]>([]);
   const posRef = useRef({ x: -200, y: -200 });
   const animRef = useRef<number>(0);
   const pressedRef = useRef(false);
-  const mainOpacityRef = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -30,64 +28,49 @@ export function MouseGlow() {
     resize();
     window.addEventListener("resize", resize);
 
-    let lastX = -200;
-    let lastY = -200;
+    const MAX_TRAIL = 80;
+    const MAX_AGE = 60; // frames to fully fade (~1s at 60fps)
+    const HEAD_WIDTH = 6;
+    const TAIL_MIN = 0.5;
 
-    // 0.5s fade at 60fps → ~0.033 per frame
-    const FADE_IN_RATE = 0.1;
-    const FADE_OUT_RATE = 0.033;
-
-    const addTrailPoint = (x: number, y: number) => {
+    const addPoint = (x: number, y: number) => {
       posRef.current = { x, y };
-      const dx = x - lastX;
-      const dy = y - lastY;
-      if (dx * dx + dy * dy > 16) {
-        pointsRef.current.push({
-          x,
-          y,
-          opacity: 0.6,
-          radius: 45,
-        });
-        lastX = x;
-        lastY = y;
-        if (pointsRef.current.length > 40) {
-          pointsRef.current.shift();
-        }
+      const trail = trailRef.current;
+      const last = trail[trail.length - 1];
+      // Add point only if moved enough for smoothness
+      if (last) {
+        const dx = x - last.x;
+        const dy = y - last.y;
+        if (dx * dx + dy * dy < 4) return;
       }
+      trail.push({ x, y, age: 0 });
+      if (trail.length > MAX_TRAIL) trail.shift();
     };
 
-    // Mouse: only glow while clicking and dragging
     const handleMouseDown = (e: MouseEvent) => {
       pressedRef.current = true;
-      posRef.current = { x: e.clientX, y: e.clientY };
-      lastX = e.clientX;
-      lastY = e.clientY;
+      trailRef.current = [];
+      addPoint(e.clientX, e.clientY);
     };
-
     const handleMouseMove = (e: MouseEvent) => {
       if (!pressedRef.current) return;
-      addTrailPoint(e.clientX, e.clientY);
+      addPoint(e.clientX, e.clientY);
     };
-
     const handleMouseUp = () => {
       pressedRef.current = false;
     };
 
-    // Touch: glow while finger is on screen and moving
     const handleTouchStart = (e: TouchEvent) => {
       pressedRef.current = true;
+      trailRef.current = [];
       const t = e.touches[0];
-      posRef.current = { x: t.clientX, y: t.clientY };
-      lastX = t.clientX;
-      lastY = t.clientY;
+      addPoint(t.clientX, t.clientY);
     };
-
     const handleTouchMove = (e: TouchEvent) => {
       if (!pressedRef.current) return;
       const t = e.touches[0];
-      addTrailPoint(t.clientX, t.clientY);
+      addPoint(t.clientX, t.clientY);
     };
-
     const handleTouchEnd = () => {
       pressedRef.current = false;
     };
@@ -99,54 +82,106 @@ export function MouseGlow() {
     document.addEventListener("touchmove", handleTouchMove);
     document.addEventListener("touchend", handleTouchEnd);
 
+    // Easing: smooth cubic fade
+    const ease = (t: number) => t * t * (3 - 2 * t);
+
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const trail = trailRef.current;
 
-      // Fade main opacity in/out
-      if (pressedRef.current) {
-        mainOpacityRef.current = Math.min(1, mainOpacityRef.current + FADE_IN_RATE);
-      } else {
-        mainOpacityRef.current = Math.max(0, mainOpacityRef.current - FADE_OUT_RATE);
+      if (trail.length >= 2) {
+        // Draw the trail as a series of tapered line segments
+        for (let i = 1; i < trail.length; i++) {
+          const prev = trail[i - 1];
+          const curr = trail[i];
+
+          // Position along trail: 0 = tail (oldest), 1 = head (newest)
+          const tPrev = i > 1 ? (i - 1) / (trail.length - 1) : 0;
+          const tCurr = i / (trail.length - 1);
+
+          // Age-based fade for each point
+          const prevFade = Math.max(0, 1 - prev.age / MAX_AGE);
+          const currFade = Math.max(0, 1 - curr.age / MAX_AGE);
+
+          // Combine position taper with age fade
+          const prevAlpha = ease(tPrev) * ease(prevFade);
+          const currAlpha = ease(tCurr) * ease(currFade);
+
+          // Skip fully transparent segments
+          if (prevAlpha <= 0 && currAlpha <= 0) continue;
+
+          // Width tapers from tail to head
+          const prevWidth = TAIL_MIN + (HEAD_WIDTH - TAIL_MIN) * ease(tPrev) * ease(prevFade);
+          const currWidth = TAIL_MIN + (HEAD_WIDTH - TAIL_MIN) * ease(tCurr) * ease(currFade);
+
+          // Draw tapered segment using a quadrilateral
+          const dx = curr.x - prev.x;
+          const dy = curr.y - prev.y;
+          const len = Math.sqrt(dx * dx + dy * dy);
+          if (len === 0) continue;
+
+          const nx = -dy / len;
+          const ny = dx / len;
+
+          // Create gradient along segment
+          const avgAlpha = (prevAlpha + currAlpha) / 2;
+          const color = `rgba(110, 70, 210, ${avgAlpha * 0.7})`;
+
+          ctx.beginPath();
+          ctx.moveTo(prev.x + nx * prevWidth, prev.y + ny * prevWidth);
+          ctx.lineTo(curr.x + nx * currWidth, curr.y + ny * currWidth);
+          ctx.lineTo(curr.x - nx * currWidth, curr.y - ny * currWidth);
+          ctx.lineTo(prev.x - nx * prevWidth, prev.y - ny * prevWidth);
+          ctx.closePath();
+          ctx.fillStyle = color;
+          ctx.fill();
+        }
+
+        // Outer glow pass — thicker, more transparent, for the glow effect
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        for (let i = 1; i < trail.length; i++) {
+          const prev = trail[i - 1];
+          const curr = trail[i];
+          const tCurr = i / (trail.length - 1);
+          const currFade = Math.max(0, 1 - curr.age / MAX_AGE);
+          const alpha = ease(tCurr) * ease(currFade);
+          if (alpha <= 0) continue;
+
+          const glowWidth = (TAIL_MIN + (HEAD_WIDTH * 3 - TAIL_MIN) * ease(tCurr)) * ease(currFade);
+
+          ctx.beginPath();
+          ctx.moveTo(prev.x, prev.y);
+          ctx.lineTo(curr.x, curr.y);
+          ctx.strokeStyle = `rgba(110, 70, 210, ${alpha * 0.15})`;
+          ctx.lineWidth = glowWidth;
+          ctx.stroke();
+        }
+
+        // Small bright dot at the head when pressed
+        if (pressedRef.current && trail.length > 0) {
+          const head = trail[trail.length - 1];
+          const headFade = Math.max(0, 1 - head.age / MAX_AGE);
+          if (headFade > 0) {
+            const g = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 14);
+            g.addColorStop(0, `rgba(160, 130, 255, ${0.6 * headFade})`);
+            g.addColorStop(0.5, `rgba(110, 70, 210, ${0.2 * headFade})`);
+            g.addColorStop(1, "rgba(110, 70, 210, 0)");
+            ctx.beginPath();
+            ctx.arc(head.x, head.y, 14, 0, Math.PI * 2);
+            ctx.fillStyle = g;
+            ctx.fill();
+          }
+        }
       }
 
-      const mainAlpha = mainOpacityRef.current;
-
-      // Draw trail points
-      for (let i = 0; i < pointsRef.current.length; i++) {
-        const p = pointsRef.current[i];
-        const gradient = ctx.createRadialGradient(
-          p.x, p.y, 0,
-          p.x, p.y, p.radius
-        );
-        gradient.addColorStop(0, `rgba(99, 60, 196, ${p.opacity})`);
-        gradient.addColorStop(0.4, `rgba(99, 60, 196, ${p.opacity * 0.35})`);
-        gradient.addColorStop(1, "rgba(99, 60, 196, 0)");
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-
-        // Fade trail: ~0.5s when released, normal when pressed
-        p.opacity -= pressedRef.current ? 0.016 : 0.045;
-        p.radius += 0.5;
+      // Age all points (faster when not pressed for smooth fade-away)
+      const ageRate = pressedRef.current ? 0.6 : 2.5;
+      for (const p of trail) {
+        p.age += ageRate;
       }
-
-      pointsRef.current = pointsRef.current.filter((p) => p.opacity > 0);
-
-      // Draw main glow at cursor/finger position
-      if (mainAlpha > 0) {
-        const { x, y } = posRef.current;
-        const g = ctx.createRadialGradient(x, y, 0, x, y, 70);
-        g.addColorStop(0, `rgba(120, 80, 220, ${0.5 * mainAlpha})`);
-        g.addColorStop(0.3, `rgba(99, 60, 196, ${0.25 * mainAlpha})`);
-        g.addColorStop(0.6, `rgba(99, 60, 196, ${0.08 * mainAlpha})`);
-        g.addColorStop(1, "rgba(99, 60, 196, 0)");
-        ctx.beginPath();
-        ctx.arc(x, y, 70, 0, Math.PI * 2);
-        ctx.fillStyle = g;
-        ctx.fill();
-      }
+      // Remove fully faded points
+      trailRef.current = trail.filter((p) => p.age < MAX_AGE);
 
       animRef.current = requestAnimationFrame(animate);
     };
