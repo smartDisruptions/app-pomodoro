@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { playStartSound, startAmbientSound, stopAmbientSound } from "@/lib/audio";
 import { ReflectionDialog } from "@/components/timer/reflection-dialog";
+import { MouseGlow } from "@/components/effects/mouse-glow";
 import { useSessionStore } from "@/stores/session-store";
 import { useAchievementsStore } from "@/stores/achievements-store";
 
@@ -143,6 +144,7 @@ export default function TimerPage() {
   if (isFullscreen) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
+        <MouseGlow />
         <Button
           variant="ghost"
           size="sm"
@@ -185,6 +187,7 @@ export default function TimerPage() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-8">
+      <MouseGlow />
       <div className="absolute top-20 right-4 md:top-4">
         <Button
           variant="ghost"
