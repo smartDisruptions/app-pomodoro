@@ -24,29 +24,42 @@ export function Heatmap({ dailyStats, weeks = 12 }: HeatmapProps) {
       [];
 
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const todayDay = today.getDay(); // 0=Sun
-    const totalDays = weeks * 7;
 
-    for (let i = totalDays - 1; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split("T")[0];
-      const dayOfWeek = d.getDay(); // 0=Sun, row index
-      const col = Math.floor((totalDays - 1 - i + todayDay) / 7);
+    // Sunday of the current week
+    const currentWeekSunday = new Date(today);
+    currentWeekSunday.setDate(today.getDate() - todayDay);
 
-      const stats = statsMap.get(dateStr);
-      cells.push({
-        date: dateStr,
-        count: stats?.sessionsCompleted ?? 0,
-        col: weeks - 1 - col,
-        row: dayOfWeek,
-      });
+    // Build complete columns (Sun–Sat) from oldest week (col 0) to current week
+    for (let col = 0; col < weeks; col++) {
+      for (let row = 0; row < 7; row++) {
+        const d = new Date(currentWeekSunday);
+        d.setDate(
+          currentWeekSunday.getDate() - (weeks - 1 - col) * 7 + row
+        );
+        const dateStr = d.toISOString().split("T")[0];
+
+        if (d > today) {
+          // Future date – render as invisible spacer
+          cells.push({ date: dateStr, count: -1, col, row });
+        } else {
+          const stats = statsMap.get(dateStr);
+          cells.push({
+            date: dateStr,
+            count: stats?.sessionsCompleted ?? 0,
+            col,
+            row,
+          });
+        }
+      }
     }
 
     return cells;
   }, [dailyStats, weeks]);
 
   const getIntensity = (count: number): string => {
+    if (count < 0) return "bg-transparent";
     if (count === 0) return "bg-border/50";
     if (count <= 2) return "bg-primary/25";
     if (count <= 4) return "bg-primary/50";
