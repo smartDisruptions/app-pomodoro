@@ -12,7 +12,7 @@ interface GlowPoint {
 export function MouseGlow() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pointsRef = useRef<GlowPoint[]>([]);
-  const mouseRef = useRef({ x: -100, y: -100 });
+  const posRef = useRef({ x: -200, y: -200 });
   const animRef = useRef<number>(0);
 
   useEffect(() => {
@@ -28,33 +28,45 @@ export function MouseGlow() {
     resize();
     window.addEventListener("resize", resize);
 
+    let lastX = -200;
+    let lastY = -200;
+
     const handleMove = (e: MouseEvent) => {
-      mouseRef.current = { x: e.clientX, y: e.clientY };
-      pointsRef.current.push({
-        x: e.clientX,
-        y: e.clientY,
-        opacity: 0.6,
-        radius: 40,
-      });
-      // Cap trail length
-      if (pointsRef.current.length > 30) {
-        pointsRef.current.shift();
+      const x = e.clientX;
+      const y = e.clientY;
+      posRef.current = { x, y };
+
+      // Only add trail points when mouse has moved enough
+      const dx = x - lastX;
+      const dy = y - lastY;
+      if (dx * dx + dy * dy > 16) {
+        pointsRef.current.push({
+          x,
+          y,
+          opacity: 0.9,
+          radius: 50,
+        });
+        lastX = x;
+        lastY = y;
+        if (pointsRef.current.length > 40) {
+          pointsRef.current.shift();
+        }
       }
     };
-    window.addEventListener("mousemove", handleMove);
+    document.addEventListener("mousemove", handleMove);
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw trail points
-      for (let i = pointsRef.current.length - 1; i >= 0; i--) {
+      // Draw trail points (oldest first so newest renders on top)
+      for (let i = 0; i < pointsRef.current.length; i++) {
         const p = pointsRef.current[i];
         const gradient = ctx.createRadialGradient(
           p.x, p.y, 0,
           p.x, p.y, p.radius
         );
         gradient.addColorStop(0, `rgba(139, 92, 246, ${p.opacity})`);
-        gradient.addColorStop(0.5, `rgba(139, 92, 246, ${p.opacity * 0.3})`);
+        gradient.addColorStop(0.4, `rgba(139, 92, 246, ${p.opacity * 0.4})`);
         gradient.addColorStop(1, "rgba(139, 92, 246, 0)");
 
         ctx.beginPath();
@@ -62,24 +74,22 @@ export function MouseGlow() {
         ctx.fillStyle = gradient;
         ctx.fill();
 
-        // Fade out
-        p.opacity -= 0.015;
-        p.radius += 0.3;
+        p.opacity -= 0.018;
+        p.radius += 0.5;
       }
 
-      // Remove fully faded points
       pointsRef.current = pointsRef.current.filter((p) => p.opacity > 0);
 
-      // Draw main glow at cursor
-      const mx = mouseRef.current.x;
-      const my = mouseRef.current.y;
-      const mainGradient = ctx.createRadialGradient(mx, my, 0, mx, my, 60);
-      mainGradient.addColorStop(0, "rgba(139, 92, 246, 0.35)");
-      mainGradient.addColorStop(0.4, "rgba(139, 92, 246, 0.12)");
-      mainGradient.addColorStop(1, "rgba(139, 92, 246, 0)");
+      // Draw bright main glow at cursor position
+      const { x, y } = posRef.current;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 80);
+      g.addColorStop(0, "rgba(167, 139, 250, 0.7)");
+      g.addColorStop(0.3, "rgba(139, 92, 246, 0.35)");
+      g.addColorStop(0.6, "rgba(139, 92, 246, 0.1)");
+      g.addColorStop(1, "rgba(139, 92, 246, 0)");
       ctx.beginPath();
-      ctx.arc(mx, my, 60, 0, Math.PI * 2);
-      ctx.fillStyle = mainGradient;
+      ctx.arc(x, y, 80, 0, Math.PI * 2);
+      ctx.fillStyle = g;
       ctx.fill();
 
       animRef.current = requestAnimationFrame(animate);
@@ -88,7 +98,7 @@ export function MouseGlow() {
 
     return () => {
       window.removeEventListener("resize", resize);
-      window.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mousemove", handleMove);
       cancelAnimationFrame(animRef.current);
     };
   }, []);
