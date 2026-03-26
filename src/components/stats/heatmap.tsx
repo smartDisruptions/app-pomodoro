@@ -90,15 +90,15 @@ export function Heatmap({ dailyStats, weeks = 12 }: HeatmapProps) {
       {/* Month labels */}
       <div className="flex ml-8 mb-1">
         <div
-          className="grid gap-[3px]"
+          className="grid gap-[4px]"
           style={{
-            gridTemplateColumns: `repeat(${weeks}, 13px)`,
+            gridTemplateColumns: `repeat(${weeks}, 18px)`,
           }}
         >
           {Array.from({ length: weeks }).map((_, i) => {
             const label = monthLabels.find((m) => m.col === i);
             return (
-              <span key={i} className="text-[10px] text-muted-foreground">
+              <span key={i} className="text-[11px] text-muted-foreground">
                 {label?.label ?? ""}
               </span>
             );
@@ -108,11 +108,11 @@ export function Heatmap({ dailyStats, weeks = 12 }: HeatmapProps) {
 
       <div className="flex gap-1">
         {/* Day labels */}
-        <div className="flex flex-col gap-[3px] pr-1">
+        <div className="flex flex-col gap-[4px] pr-1">
           {dayLabels.map((label, i) => (
             <span
               key={i}
-              className="text-[10px] text-muted-foreground h-[13px] flex items-center"
+              className="text-[11px] text-muted-foreground h-[18px] flex items-center"
             >
               {label}
             </span>
@@ -121,17 +121,17 @@ export function Heatmap({ dailyStats, weeks = 12 }: HeatmapProps) {
 
         {/* Grid */}
         <div
-          className="grid gap-[3px]"
+          className="grid gap-[4px]"
           style={{
-            gridTemplateColumns: `repeat(${weeks}, 13px)`,
-            gridTemplateRows: "repeat(7, 13px)",
+            gridTemplateColumns: `repeat(${weeks}, 18px)`,
+            gridTemplateRows: "repeat(7, 18px)",
             gridAutoFlow: "column",
           }}
         >
           {grid.map((cell) => (
             <div
               key={cell.date}
-              className={`w-[13px] h-[13px] rounded-sm ${getIntensity(cell.count)} transition-colors cursor-default`}
+              className={`w-[18px] h-[18px] rounded-sm ${getIntensity(cell.count)} transition-colors cursor-default`}
               onMouseEnter={(e) => {
                 const rect = (
                   e.target as HTMLElement
