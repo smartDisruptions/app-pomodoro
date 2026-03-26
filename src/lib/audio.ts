@@ -101,38 +101,3 @@ export function setAmbientVolume(volume: number) {
     );
   }
 }
-
-export function playTouchGlowSound() {
-  try {
-    const ctx = new AudioContext();
-
-    // Crystalline chord: C6 / E6 / G6 with a shimmer overtone
-    const notes = [
-      { freq: 1047, vol: 0.055, delay: 0 },
-      { freq: 1319, vol: 0.04, delay: 0.022 },
-      { freq: 1568, vol: 0.03, delay: 0.044 },
-      { freq: 2093, vol: 0.014, delay: 0.01 },
-    ];
-
-    notes.forEach(({ freq, vol, delay }) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.value = freq;
-
-      const t = ctx.currentTime + delay;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(vol, t + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.65);
-
-      osc.start(t);
-      osc.stop(t + 0.65);
-    });
-
-    setTimeout(() => ctx.close(), 1400);
-  } catch {
-    // Audio not available
-  }
-}

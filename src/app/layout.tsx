@@ -5,7 +5,6 @@ import { Navigation } from "@/components/layout/navigation";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { AmbientBackground } from "@/components/ui/ambient-background";
 import { AchievementToast } from "@/components/ui/achievement-toast";
-import { TouchGlowBackground } from "@/components/ui/touch-glow-background";
 import "./globals.css";
 
 const inter = Inter({
@@ -74,7 +73,6 @@ export default function RootLayout({
         <ThemeProvider>
         <TooltipProvider>
           <AmbientBackground />
-          <TouchGlowBackground />
           <AchievementToast />
           <div className="flex flex-col min-h-screen">
             <header className="hidden md:flex items-center justify-between px-6 py-4 border-b border-border">
