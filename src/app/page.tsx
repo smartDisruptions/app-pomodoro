@@ -174,28 +174,27 @@ export default function TimerPage() {
   if (isFullscreen) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background select-none">
-        {/* Cockpit layers — skip on mobile to prevent black screen */}
+        {/* Cockpit layers — ParticleField skipped on mobile (GPU-heavy) */}
         {!isMobile && (
-          <>
-            <ParticleField
-              elapsed={elapsed}
-              isBreak={isBreak}
-              color={activeTheme.rgb}
-              register={register}
-              unregister={unregister}
-              positioning="absolute"
-            />
-            <MouseGlow
-              constellation={sessionType === "focus" && state === "running"}
-              color={activeTheme.rgb}
-              glowColor={activeTheme.glow}
-              constellationRef={constellationRef}
-              register={register}
-              unregister={unregister}
-              positioning="absolute"
-            />
-          </>
+          <ParticleField
+            elapsed={elapsed}
+            isBreak={isBreak}
+            color={activeTheme.rgb}
+            register={register}
+            unregister={unregister}
+            positioning="absolute"
+          />
         )}
+        {/* MouseGlow works on mobile now that positioning is absolute */}
+        <MouseGlow
+          constellation={sessionType === "focus" && state === "running"}
+          color={activeTheme.rgb}
+          glowColor={activeTheme.glow}
+          constellationRef={constellationRef}
+          register={register}
+          unregister={unregister}
+          positioning="absolute"
+        />
 
         {/* HUD elements */}
         <SessionHUD
@@ -263,7 +262,6 @@ export default function TimerPage() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-8">
-      <MouseGlow />
       <div className="absolute top-20 right-4 md:top-4">
         <Button
           variant="ghost"
