@@ -54,13 +54,14 @@ export function CircularProgress({
   return (
     <div
       className={className}
-      style={{ width: size, height: size, position: "relative" }}
+      style={{ width: size, height: size, position: "relative", overflow: "visible" }}
     >
       <svg
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         className="rotate-[-90deg]"
+        style={{ overflow: "visible" }}
       >
         {/* Cockpit tick marks */}
         {cockpit &&
