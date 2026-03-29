@@ -61,6 +61,10 @@ export default function TimerPage() {
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
   const { register, unregister } = useCockpitAnimation();
   const constellationRef = useRef<{ x: number; y: number }[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    setIsMobile(/Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768);
+  }, []);
   const reflectionEnabled = useSettingsStore((s) => s.reflectionEnabled);
   // Cockpit theme — could be stored in settings later
   const cockpitTheme: CockpitTheme = "default";
@@ -170,24 +174,28 @@ export default function TimerPage() {
   if (isFullscreen) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background select-none">
-        {/* Cockpit layers */}
-        <ParticleField
-          elapsed={elapsed}
-          isBreak={isBreak}
-          color={activeTheme.rgb}
-          register={register}
-          unregister={unregister}
-          positioning="absolute"
-        />
-        <MouseGlow
-          constellation={sessionType === "focus" && state === "running"}
-          color={activeTheme.rgb}
-          glowColor={activeTheme.glow}
-          constellationRef={constellationRef}
-          register={register}
-          unregister={unregister}
-          positioning="absolute"
-        />
+        {/* Cockpit layers — skip on mobile to prevent black screen */}
+        {!isMobile && (
+          <>
+            <ParticleField
+              elapsed={elapsed}
+              isBreak={isBreak}
+              color={activeTheme.rgb}
+              register={register}
+              unregister={unregister}
+              positioning="absolute"
+            />
+            <MouseGlow
+              constellation={sessionType === "focus" && state === "running"}
+              color={activeTheme.rgb}
+              glowColor={activeTheme.glow}
+              constellationRef={constellationRef}
+              register={register}
+              unregister={unregister}
+              positioning="absolute"
+            />
+          </>
+        )}
 
         {/* HUD elements */}
         <SessionHUD
