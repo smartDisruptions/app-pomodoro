@@ -45,7 +45,7 @@ export function Navigation({ variant }: { variant: "desktop" | "mobile" }) {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-center justify-around border-t border-border bg-background/95 backdrop-blur-sm px-2 py-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-center justify-around border-t border-border bg-background/95 backdrop-blur-sm px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
       {navItems.map((item) => {
         const isActive = pathname === item.href;
         return (

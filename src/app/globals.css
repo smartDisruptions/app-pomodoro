@@ -226,9 +226,15 @@
   body {
     @apply bg-background text-foreground;
     transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
   }
   html {
     @apply font-sans;
+    touch-action: manipulation;
+  }
+  /* iOS safe areas */
+  html, body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 }
 
