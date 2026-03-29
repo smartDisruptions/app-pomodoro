@@ -177,6 +177,7 @@ export default function TimerPage() {
           color={activeTheme.rgb}
           register={register}
           unregister={unregister}
+          positioning="absolute"
         />
         <MouseGlow
           constellation={sessionType === "focus" && state === "running"}
@@ -185,6 +186,7 @@ export default function TimerPage() {
           constellationRef={constellationRef}
           register={register}
           unregister={unregister}
+          positioning="absolute"
         />
 
         {/* HUD elements */}

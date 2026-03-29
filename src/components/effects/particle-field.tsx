@@ -18,6 +18,7 @@ interface ParticleFieldProps {
   color: string; // CSS color string like "110, 70, 210"
   register: (id: string, cb: (ts: number) => void) => void;
   unregister: (id: string) => void;
+  positioning?: "fixed" | "absolute";
 }
 
 const MIN_PARTICLES = 30;
@@ -28,7 +29,7 @@ const PARTICLE_SIZE = 1.5;
 const BREAK_COUNT_RATIO = 0.4;
 const BREAK_SPEED_RATIO = 0.2;
 
-export function ParticleField({ elapsed, color, isBreak, register, unregister }: ParticleFieldProps) {
+export function ParticleField({ elapsed, color, isBreak, register, unregister, positioning = "fixed" }: ParticleFieldProps) {
   const { canvasRef, ctxRef, sizeRef } = useCanvas();
   const particlesRef = useRef<Particle[]>([]);
   const elapsedRef = useRef(elapsed);
@@ -108,7 +109,7 @@ export function ParticleField({ elapsed, color, isBreak, register, unregister }:
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none"
+      className={`${positioning} inset-0 pointer-events-none`}
       style={{ zIndex: 0 }}
       aria-hidden="true"
     />

@@ -20,6 +20,7 @@ interface MouseGlowProps {
   constellationRef?: React.MutableRefObject<ConstellationPoint[]>;
   register?: (id: string, cb: (ts: number) => void) => void;
   unregister?: (id: string) => void;
+  positioning?: "fixed" | "absolute";
 }
 
 const MAX_TRAIL = 80;
@@ -36,6 +37,7 @@ export function MouseGlow({
   constellationRef,
   register,
   unregister,
+  positioning = "fixed",
 }: MouseGlowProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const trailRef = useRef<TrailPoint[]>([]);
@@ -281,7 +283,7 @@ export function MouseGlow({
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none"
+      className={`${positioning} inset-0 pointer-events-none`}
       style={{ zIndex: 10 }}
       aria-hidden="true"
     />
