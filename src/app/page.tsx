@@ -9,6 +9,7 @@ import { useTimer } from "@/hooks/use-timer";
 import { useSessionCompletion } from "@/hooks/use-session-completion";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useFullscreen } from "@/hooks/use-fullscreen";
+import { useCockpitAnimation } from "@/hooks/use-cockpit-animation";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useTaskStore } from "@/stores/task-store";
 import { useTimerStore } from "@/stores/timer-store";
@@ -17,8 +18,22 @@ import { Maximize2, Minimize2 } from "lucide-react";
 import { playStartSound, startAmbientSound, stopAmbientSound } from "@/lib/audio";
 import { ReflectionDialog } from "@/components/timer/reflection-dialog";
 import { MouseGlow } from "@/components/effects/mouse-glow";
+import { ParticleField } from "@/components/effects/particle-field";
+import { SessionHUD } from "@/components/effects/session-hud";
+import { FocusDepth } from "@/components/effects/focus-depth";
+import { KeyboardOverlay } from "@/components/effects/keyboard-overlay";
 import { useSessionStore } from "@/stores/session-store";
 import { useAchievementsStore } from "@/stores/achievements-store";
+
+// Cockpit theme color configs (RGB triplets for canvas rendering)
+const COCKPIT_COLORS = {
+  default: { rgb: "110, 70, 210", glow: "160, 130, 255", hud: "hsl(252, 30%, 70%)", css: "hsl(252, 85%, 63%)" },
+  tron: { rgb: "0, 191, 255", glow: "100, 220, 255", hud: "hsl(195, 30%, 70%)", css: "hsl(195, 100%, 50%)" },
+  matrix: { rgb: "0, 153, 0", glow: "80, 220, 80", hud: "hsl(120, 30%, 65%)", css: "hsl(120, 100%, 40%)" },
+  gold: { rgb: "255, 191, 0", glow: "255, 220, 100", hud: "hsl(45, 30%, 70%)", css: "hsl(45, 100%, 50%)" },
+} as const;
+
+type CockpitTheme = keyof typeof COCKPIT_COLORS;
 
 export default function TimerPage() {
   const {
@@ -44,7 +59,11 @@ export default function TimerPage() {
   const setSelectedTaskId = useTimerStore((s) => s.setSelectedTaskId);
   const selectedTask = tasks.find((t) => t.id === selectedTaskId);
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
+  const { register, unregister } = useCockpitAnimation();
+  const constellationRef = useRef<{ x: number; y: number }[]>([]);
   const reflectionEnabled = useSettingsStore((s) => s.reflectionEnabled);
+  // Cockpit theme — could be stored in settings later
+  const cockpitTheme: CockpitTheme = "default";
   const updateSession = useSessionStore((s) => s.updateSession);
   const checkAndUnlock = useAchievementsStore((s) => s.checkAndUnlock);
   const sessions = useSessionStore((s) => s.sessions);
@@ -141,36 +160,83 @@ export default function TimerPage() {
     />
   );
 
+  // Cockpit computed values
+  const isBreak = sessionType !== "focus";
+  const elapsed = totalDuration > 0 ? 1 - timeRemaining / totalDuration : 0;
+  const theme = COCKPIT_COLORS[cockpitTheme];
+  const breakTheme = { rgb: "255, 170, 50", glow: "255, 200, 120", hud: "hsl(38, 30%, 70%)", css: "hsl(38, 95%, 55%)" };
+  const activeTheme = isBreak ? breakTheme : theme;
+
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
-        <MouseGlow />
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background select-none">
+        {/* Cockpit layers */}
+        <ParticleField
+          elapsed={elapsed}
+          isBreak={isBreak}
+          color={activeTheme.rgb}
+          register={register}
+          unregister={unregister}
+        />
+        <MouseGlow
+          constellation={sessionType === "focus" && state === "running"}
+          color={activeTheme.rgb}
+          glowColor={activeTheme.glow}
+          constellationRef={constellationRef}
+          register={register}
+          unregister={unregister}
+        />
+
+        {/* HUD elements */}
+        <SessionHUD
+          sessionIndex={currentSessionIndex}
+          sessionsBeforeLongBreak={sessionsBeforeLongBreak}
+          hudColor={activeTheme.hud}
+        />
+        <FocusDepth
+          isRunning={state === "running"}
+          isPaused={state === "paused"}
+          color={activeTheme.css}
+        />
+        <KeyboardOverlay hudColor={activeTheme.hud} />
+
+        {/* Exit button */}
         <Button
           variant="ghost"
           size="sm"
           onClick={toggleFullscreen}
           className="absolute top-4 right-4"
+          style={{ zIndex: 50, minWidth: 44, minHeight: 44 }}
           aria-label="Exit focus mode"
         >
           <Minimize2 className="h-5 w-5" />
         </Button>
 
         {selectedTask && (
-          <p className="text-sm text-muted-foreground mb-6">
+          <p className="text-sm text-muted-foreground mb-2 pointer-events-none" style={{ zIndex: 35 }}>
             {selectedTask.title}
           </p>
         )}
 
-        <CircularProgress progress={progress} size={320} strokeWidth={10}>
-          <TimerDisplay
-            timeRemaining={timeRemaining}
-            sessionType={sessionType}
-            currentSessionIndex={currentSessionIndex}
-            sessionsBeforeLongBreak={sessionsBeforeLongBreak}
-          />
-        </CircularProgress>
+        <div style={{ zIndex: 35, position: "relative" }}>
+          <CircularProgress
+            progress={progress}
+            size={280}
+            strokeWidth={10}
+            cockpit
+            elapsed={elapsed}
+            glowColor={activeTheme.css}
+          >
+            <TimerDisplay
+              timeRemaining={timeRemaining}
+              sessionType={sessionType}
+              currentSessionIndex={currentSessionIndex}
+              sessionsBeforeLongBreak={sessionsBeforeLongBreak}
+            />
+          </CircularProgress>
+        </div>
 
-        <div className="mt-8">
+        <div className="mt-6" style={{ zIndex: 35, position: "relative" }}>
           <TimerControls
             state={state}
             onStart={handleStart}

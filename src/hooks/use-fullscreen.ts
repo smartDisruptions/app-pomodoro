@@ -1,22 +1,27 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 export function useFullscreen() {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const cssOnlyRef = useRef(false);
 
   const enter = useCallback(async () => {
+    let usedApi = false;
     try {
       if (document.documentElement.requestFullscreen) {
         await document.documentElement.requestFullscreen();
+        usedApi = true;
       }
     } catch {
       // Fullscreen API not available or denied — fall back to CSS-only
     }
+    if (!usedApi) cssOnlyRef.current = true;
     setIsFullscreen(true);
   }, []);
 
   const exit = useCallback(async () => {
+    cssOnlyRef.current = false;
     try {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
@@ -32,10 +37,10 @@ export function useFullscreen() {
     else enter();
   }, [isFullscreen, enter, exit]);
 
-  // Sync state when user exits fullscreen via Escape
+  // Sync state when user exits fullscreen via Escape (only when using real API)
   useEffect(() => {
     const handler = () => {
-      if (!document.fullscreenElement) {
+      if (!document.fullscreenElement && !cssOnlyRef.current) {
         setIsFullscreen(false);
       }
     };
