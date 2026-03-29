@@ -131,7 +131,7 @@ export default function TimerPage() {
     else if (state === "running") pause();
     else if (state === "paused") resume();
     else if (state === "completed") handleContinue();
-  }, [state, pause, resume]);
+  }, [state, handleStart, pause, resume, handleContinue]);
 
   useKeyboardShortcuts({
     onToggle: handleToggle,

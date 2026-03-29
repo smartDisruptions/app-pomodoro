@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Timer, History, BarChart3, Settings } from "lucide-react";
+import { useFullscreenStore } from "@/stores/fullscreen-store";
 
 const navItems = [
   { href: "/", label: "Timer", icon: Timer },
@@ -14,6 +15,9 @@ const navItems = [
 
 export function Navigation({ variant }: { variant: "desktop" | "mobile" }) {
   const pathname = usePathname();
+  const isFullscreen = useFullscreenStore((s) => s.isFullscreen);
+
+  if (isFullscreen) return null;
 
   if (variant === "desktop") {
     return (

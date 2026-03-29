@@ -1,24 +1,29 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { useFullscreenStore } from "@/stores/fullscreen-store";
 
 export function useFullscreen() {
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const isFullscreen = useFullscreenStore((s) => s.isFullscreen);
+  const setFullscreen = useFullscreenStore((s) => s.setFullscreen);
   const cssOnlyRef = useRef(false);
 
-  const enter = useCallback(async () => {
+  const enter = useCallback(() => {
+    // Try the Fullscreen API but don't block on it
     let usedApi = false;
     try {
       if (document.documentElement.requestFullscreen) {
-        await document.documentElement.requestFullscreen();
+        document.documentElement.requestFullscreen().catch(() => {
+          // Fullscreen API denied — CSS-only fallback already active
+        });
         usedApi = true;
       }
     } catch {
-      // Fullscreen API not available or denied — fall back to CSS-only
+      // requestFullscreen not available
     }
     if (!usedApi) cssOnlyRef.current = true;
-    setIsFullscreen(true);
-  }, []);
+    setFullscreen(true);
+  }, [setFullscreen]);
 
   const exit = useCallback(async () => {
     cssOnlyRef.current = false;
@@ -29,35 +34,35 @@ export function useFullscreen() {
     } catch {
       // Ignore errors
     }
-    setIsFullscreen(false);
-  }, []);
+    setFullscreen(false);
+  }, [setFullscreen]);
 
   const toggle = useCallback(() => {
     if (isFullscreen) exit();
     else enter();
   }, [isFullscreen, enter, exit]);
 
-  // Sync state when user exits fullscreen via Escape (only when using real API)
+  // Sync state when user exits fullscreen via browser UI (only when using real API)
   useEffect(() => {
     const handler = () => {
       if (!document.fullscreenElement && !cssOnlyRef.current) {
-        setIsFullscreen(false);
+        setFullscreen(false);
       }
     };
     document.addEventListener("fullscreenchange", handler);
     return () => document.removeEventListener("fullscreenchange", handler);
-  }, []);
+  }, [setFullscreen]);
 
   // Escape key to exit focus mode (CSS-only case)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isFullscreen && !document.fullscreenElement) {
-        setIsFullscreen(false);
+        setFullscreen(false);
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [isFullscreen]);
+  }, [isFullscreen, setFullscreen]);
 
   return { isFullscreen, toggle, enter, exit };
 }
