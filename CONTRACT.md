@@ -158,7 +158,7 @@ While a sheet is open (`UI.busy()`), the Dial ignores keys.
 | `quality` | `{QL, why}` | main → all (a relayout and re-bake follow) |
 | `theme` · `daypart` | `{theme}` · `{part}` | main → all (Scene re-bakes its sky on `daypart`) |
 | `gesture` | | main (first touch/key) → Snd (unlock audio) |
-| `hidden` · `visible` | | main → Snd (suspend), Engine (reconcile time), all |
+| `hidden` · `visible` | | main → Engine (reconcile time on `visible`), Snd (keep the music playing: people switch apps while they focus), all |
 | `timer:tick` | `{left, dur, mode, state}` | Engine → Dial (readout), UI (title chip) — once per displayed second while running, and on every change |
 | `timer:state` | `{state, mode}` | Engine → all — after any state change |
 | `timer:start` · `timer:pause` · `timer:resume` | `{mode, dur}` · `{}` · `{}` | Engine → Snd, Patch, Scene, Dial, UI |
@@ -300,6 +300,7 @@ normally the module directs itself from timer events, so others rarely call this
 3-second taste of `'lofi'|'rain'|'city'`) · `haptic(name)` (`tick start done capture error`) · `setVolume(kind, v)`
 (`'master'|'music'`) · `mute(on?) → muted` · `muted` · `beat() → {playing, phase 0..1, bpm}` (Patch nods on the beat) ·
 `level() → 0..1`. Every call is a silent no-op before the first gesture or when muted or when a file is missing.
+Set up the Media Session (title, artist "Patch", play/pause → `Engine.toggle()`) so lock-screen controls work.
 
 - **Effects** (synthesise with WebAudio where it sounds good; tiny files otherwise): `tap open close toggle start
   pause resume reset skip wind_tick wind_release bell chime capture quarantine unlock sew ship harvest pop squash
