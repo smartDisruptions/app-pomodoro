@@ -9,5 +9,8 @@
     "check": "node build.mjs --check",
     "test": "node --test",
     "serve": "node tools/serve.mjs dist 5173"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2"
   }
 }

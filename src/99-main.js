@@ -15,7 +15,7 @@ const MAIN = (() => {
     const now = ts / 1000;
     let dt = last ? now - last : 1 / 60; last = now;
     if (dt > 0.25) dt = 0.25;
-    const cap = QUALITY[QL].fps;
+    const cap = fpsCap(now);
     acc += dt;
     if (cap < 58 && acc < 1 / cap - 0.004) return;                 // fps cap: skip this display frame
     const step = Math.min(acc, 0.05), gap = acc; acc = 0;
@@ -25,13 +25,25 @@ const MAIN = (() => {
     try1(Scene, 'draw', ctx);
     const w = performance.now() - t0;
     WORK[wi] = w; GAP[wi] = gap * 1000; wi = (wi + 1) % N; wn = Math.min(wn + 1, N);
-    autoQuality(w, gap);
+    autoQuality(w, gap, cap);
   }
+  // The room is calm most of the time, so it draws at 30 fps (20 in heads-down mode): half the work and the
+  // battery of 60, on a timer that runs 25 minutes at a time. Moments (a finish, a capture, the harvest, a tap,
+  // an unlock) boost it to the quality's full rate for a few seconds. Winding and Bug Hunt are DOM animations on
+  // the compositor, so they stay smooth whatever this says.
+  let boostUntil = 0;
+  const boost = (s) => { boostUntil = Math.max(boostUntil, performance.now() / 1000 + s); };
+  function fpsCap(now) {
+    const q = QUALITY[QL].fps;
+    if (now < boostUntil) return q;
+    return Math.min(q, FOCUSMODE.on ? 20 : 30);
+  }
+
   // Step the quality down (never up) when this device can't keep up: either the JS work is long, or frames
   // arrive late (raster/compositor is the bottleneck on old phones). Judged over ~3 s, at most once per 4 s.
-  function autoQuality(w, gap) {
+  function autoQuality(w, gap, cap) {
     if (forcedQ !== null || QL >= QUALITY.length - 1 || document.hidden) return;
-    const target = 1 / QUALITY[QL].fps;
+    const target = 1 / cap;
     seen++;
     if (w > 9 || gap > target * 1.6) bad++;
     if (seen < 90) return;
@@ -54,13 +66,14 @@ const MAIN = (() => {
 
   // ── layout & baking ──
   let bakeN = 0;
+  const BAKES = {};   // ms from the latest relayout until each module's bake resolved
   function relayout() {
     layout();
     for (const m of layoutMods()) try1(m, 'layout');
     publishDial();
     BUS.emit('layout', { W: VW, H: VH, wide: WIDE, short: SHORT });
-    const n = ++bakeN;
-    return Promise.all([try1(Patch, 'bake'), try1(Scene, 'bake')]).then(() => { if (n === bakeN) BUS.emit('baked', {}); });
+    const n = ++bakeN, t0 = performance.now(), took = (name) => () => { BAKES[name] = +(performance.now() - t0).toFixed(1); };
+    return Promise.all([Promise.resolve(try1(Patch, 'bake')).then(took('Patch')), Promise.resolve(try1(Scene, 'bake')).then(took('Scene'))]).then(() => { if (n === bakeN) BUS.emit('baked', {}); });
   }
   let rt = 0;
   function onResize() { clearTimeout(rt); rt = setTimeout(relayout, 120); }
@@ -124,6 +137,7 @@ const MAIN = (() => {
       if (p.key === 'motion' || !p.key) applyMotion();
     });
     BUS.on('data', () => { applyTheme(); applyQualitySetting(); applyMotion(); });
+    for (const [ev, s] of [['timer:done', 6], ['rogue:capture', 3.5], ['harvest', 2.5], ['scene:tap', 1.5], ['patch:unlock', 2.5], ['hoodie', 2], ['timer:start', 1.5], ['ui:sheet', 0.8]]) BUS.on(ev, () => boost(s));
     try { RMQ.addEventListener('change', applyMotion); } catch (e) {}
   }
 
@@ -149,7 +163,13 @@ const MAIN = (() => {
     BUS.emit('boot', {});
     raf = requestAnimationFrame(frame);
     let t = performance.now();
-    await relayout();
+    // The controls appear with the first layout, before any art is baked (rasterising SVG blocks the main
+    // thread, so waiting on it would hold the controls back): on a slow phone you can start a session while
+    // Patch's room is still baking, and the room fades in when it's ready (shell.html: html.ui / html.ready).
+    const baking = relayout();
+    document.documentElement.classList.add('ui');
+    BOOT.ui = +performance.now().toFixed(1);
+    await baking;
     BOOT.bake = +(performance.now() - t).toFixed(1); t = performance.now();
     try { if (document.fonts && document.fonts.ready) await Promise.race([document.fonts.ready, wait(1.5)]); } catch (e) {}
     BOOT.fonts = +(performance.now() - t).toFixed(1);
@@ -173,10 +193,11 @@ const MAIN = (() => {
     seed: (kind) => try1(Engine, 'seed', kind),
     quality: (q) => { forcedQ = q; setQuality(q, 'dev'); },
     layout: () => relayout(),
-    perf: () => ({ work: stat(WORK, wn), gap: stat(GAP, wn), QL, DPR: +DPR.toFixed(2), fps: QUALITY[QL].fps }),
+    perf: () => ({ work: stat(WORK, wn), gap: stat(GAP, wn), QL, DPR: +DPR.toFixed(2), fps: fpsCap(performance.now() / 1000) }),
+    boost: (s) => boost(s || 3),
     perfReset: () => { wn = 0; wi = 0; },
     errors: () => Object.assign({}, ERR),
-    boot: () => JSON.parse(JSON.stringify(BOOT)),
+    boot: () => JSON.parse(JSON.stringify(Object.assign({ bakes: BAKES }, BOOT))),
     stop: () => { alive = false; cancelAnimationFrame(raf); raf = 0; },
   };
 

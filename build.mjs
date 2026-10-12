@@ -8,12 +8,14 @@
 //   node build.mjs --out X --stub audio              # force a stub
 //   node build.mjs --out X --artifact Y.html         # also write Y.html: the page without the document wrapper,
 //                                                    # for a claude.ai Artifact (audio must be published beside it)
+//   node build.mjs --inline                          # the script inside index.html (one self-contained file)
+//   node build.mjs --no-minify                       # skip esbuild even when it's installed
 //   node build.mjs --check                           # compile everything, write nothing (CI / Vercel sanity check)
 //
 // Modules are src/NN-name.js, concatenated in NN order inside one 'use strict' IIFE. core, text and main are
 // always real. Any other module falls back to stubs/NN-name.js when its src file is missing, fails
 // `node --check`, or breaks the combined script.
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, copyFileSync, unlinkSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -83,13 +85,30 @@ for (const f of existsSync(fontDir) ? readdirSync(fontDir) : []) {
 const shell = read(path.join(DIR, 'shell.html'));
 if (!shell.includes('/*SCRIPT*/') || !shell.includes('/*FONTS*/')) { console.error('✖ shell.html needs the /*FONTS*/ and /*SCRIPT*/ markers'); process.exit(1); }
 const build = createHash('sha1').update(js + fontCSS + shell).digest('hex').slice(0, 10);
+// The script: one 'use strict' IIFE, minified with esbuild when it's installed (`npm install`; skip with
+// --no-minify), else shipped as written. By default it's an external, content-hashed app.<build>.js: browsers
+// keep compiled code for external scripts (never for inline ones), so a returning visit skips the parse, and the
+// service worker precaches it. --inline puts it back in the page (one self-contained file).
+let app = `(() => {\n'use strict';\nconst BUILD = '${build}';\n${js}\n})();\n`, minified = false;
+if (!args.includes('--no-minify')) {
+  try {
+    const esbuild = await import('esbuild');
+    app = (await esbuild.transform(app, { minify: true, target: ['safari14', 'chrome80', 'firefox90'], legalComments: 'none', charset: 'utf8' })).code;
+    minified = true;
+  } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') warn('minify failed, shipping it unminified: ' + e.message); }
+}
+const INLINE = args.includes('--inline') || !!opt('artifact', '');
+const appName = `app.${build}.js`;
+if (INLINE && /<\/script/i.test(app)) { console.error('✖ the script contains "</script"; build without --inline'); process.exit(1); }
 const html = shell
   .replace('/*FONTS*/', () => fontCSS)
-  .replace('/*SCRIPT*/', () => `\n(() => {\n'use strict';\nconst BUILD = '${build}';\n${js}\n})();\n`);
+  .replace('<script>/*SCRIPT*/</script>', () => (INLINE ? `<script>\n${app}</script>` : `<script src="${appName}"></script>`));
 
 // write dist/
 mkdirSync(OUTDIR, { recursive: true });
+for (const f of readdirSync(OUTDIR)) if (/^app\.[0-9a-f]{10}\.js$/.test(f)) unlinkSync(path.join(OUTDIR, f));   // drop older builds' scripts
 writeFileSync(path.join(OUTDIR, 'index.html'), html);
+if (!INLINE) writeFileSync(path.join(OUTDIR, appName), app);
 let copied = 0, bytes = 0;
 function copyDir(from, to) {
   if (!existsSync(from)) return;
@@ -103,9 +122,9 @@ function copyDir(from, to) {
 }
 copyDir(path.join(DIR, 'public'), OUTDIR);
 const swSrc = path.join(DIR, 'public', 'sw.js');
-if (existsSync(swSrc)) writeFileSync(path.join(OUTDIR, 'sw.js'), read(swSrc).replace(/__BUILD__/g, build));
+if (existsSync(swSrc)) writeFileSync(path.join(OUTDIR, 'sw.js'), read(swSrc).replace(/__BUILD__/g, build).replace('__APP__', JSON.stringify(INLINE ? [] : [appName])));
 const kb = (n) => (n / 1024).toFixed(1) + ' KB';
-log(`built ${path.join(OUTDIR, 'index.html')} — ${kb(Buffer.byteLength(html))} (build ${build}) + ${copied} public files (${kb(bytes)})`);
+log(`built ${path.join(OUTDIR, 'index.html')} — ${kb(Buffer.byteLength(html))}${INLINE ? '' : ' + ' + appName + ' ' + kb(Buffer.byteLength(app))}${minified ? ' (minified)' : ''} (build ${build}) + ${copied} public files (${kb(bytes)})`);
 log('  ' + modsLine);
 
 const ART = opt('artifact', '');

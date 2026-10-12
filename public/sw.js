@@ -3,7 +3,7 @@
 // Pages: network first (3 s), then the cached copy. Everything else same-origin: cache first, then network.
 const CACHE = 'pomo-__BUILD__';
 const AUDIO = 'pomo-audio-1';   // bump only when a file in public/audio changes
-const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png'];
+const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png'].concat(__APP__);   // + app.<build>.js
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL).catch(() => {})).then(() => self.skipWaiting()));
 });

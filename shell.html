@@ -64,11 +64,14 @@ input, textarea { font: inherit; color: inherit; -webkit-user-select: text; user
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 /* reduced motion: core sets html.rm from the setting and the OS; functional motion (the dial) steps instead */
 html.rm *, html.rm *::before, html.rm *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
-/* nothing appears until main says ready, so the first paint is never half-built */
+/* the controls appear once main says so (html.ui: the art is baked, or 0.7 s passed); the room fades in when
+   its art is ready (html.ready), so a slow phone can start a session before Patch's room has finished baking */
 #app { opacity: 0; transition: opacity .35s var(--ease); }
-html.ready #app { opacity: 1; }
+html.ui #app { opacity: 1; }
+#scene { opacity: 0; transition: opacity .6s var(--ease); }
+html.ready #scene { opacity: 1; }
 #boot { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); color: var(--muted); font: 600 12px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase; transition: opacity .4s var(--ease); z-index: 50; pointer-events: none; }
-html.ready #boot { opacity: 0; }
+html.ui #boot { opacity: 0; }
 #boot b { display: block; width: 46px; height: 42px; margin: 0 auto 14px; border-radius: 50% 50% 46% 46%; background: radial-gradient(circle at 34% 30%, #ff9a86, #ff4a3d 45%, #c8231a); box-shadow: 0 0 40px rgba(255, 74, 61, .35); }
 </style>
 </head>
