@@ -146,7 +146,8 @@ Keyboard map in CONTRACT.md §6.
 
 ## 11. Speed is a feature
 
-The target is an old, slow phone. One file, no libraries, no network after the first load. The room is baked into
+The target is an old, slow phone. One small page and one script, no libraries, no network after the first load. The room is baked into
 a few canvases and blitted; the tomato's band and ripening run on the compositor (transform and opacity only);
-the DOM changes once a second while timing. Quality steps down by itself on a device that can't keep up.
+the DOM changes once a second while timing. The room draws at 30 fps when calm and only speeds up for moments,
+which also spares the battery over a 25-minute session. Quality steps down by itself on a device that can't keep up.
 Budgets and rules: CONTRACT.md §9.

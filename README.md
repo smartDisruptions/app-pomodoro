@@ -2,8 +2,8 @@
 
 A pomodoro timer starring **Patch**, the hacker from the Smart Disruptions Neo Dojo cast. Wind the tomato, watch it
 ripen while you focus, quarantine your distractions (the six Neo Dojo rogues), grow tomatoes on Patch's windowsill,
-and sew the patches you earn onto her hoodie. Lo-fi on. Works offline. One small file, no dependencies, built to run
-fast on an old phone.
+and sew the patches you earn onto her hoodie. Lo-fi on. Works offline and installs as an app. No runtime
+dependencies, built to run fast on an old phone.
 
 Version 2 rebuilds the March 2026 Next.js app from the ground up. Your v1 history (sessions, tasks, settings,
 achievements) moves in automatically on first open; the old data is left untouched.
@@ -11,12 +11,14 @@ achievements) moves in automatically on first open; the old data is left untouch
 ## Run it
 
 ```bash
-node build.mjs                       # → dist/ (index.html + icons, manifest, audio, sw.js)
+npm install                          # optional: esbuild, so the build minifies (it works without it)
+node build.mjs                       # → dist/ (index.html, app.<build>.js, icons, manifest, audio, sw.js)
 node tools/serve.mjs dist 5173       # http://127.0.0.1:5173/
 node --test                          # the unit tests (finds test/*.test.mjs)
 ```
 
-No `npm install`: there are no dependencies. Deployed on Vercel as a static site (`vercel.json`: `node build.mjs`, output `dist/`).
+`node build.mjs --inline` puts the script inside index.html (one self-contained file). Deployed on Vercel as a static
+site (`vercel.json`: `npm install`, `node build.mjs`, output `dist/`).
 
 Dev URLs: `?speed=60` (time runs 60× faster) · `?hour=22` (pin the time of day) · `?q=0..3` (quality tier) ·
 `?dev=1` · `?nosw=1`.

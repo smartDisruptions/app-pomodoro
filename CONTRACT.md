@@ -62,8 +62,10 @@ old and slow mobile device. Blow me away."*
 ## 2. Architecture
 
 One HTML page: a full-bleed canvas (`#scene`) for Patch's room, and a DOM layer (`#app`) for every control.
-`build.mjs` concatenates the modules in this order inside one `'use strict'` IIFE, inlines the fonts, and writes
-`dist/` (index.html + `public/` + a stamped `sw.js`):
+`build.mjs` concatenates the modules in this order inside one `'use strict'` IIFE and writes `dist/`: `index.html`
+(the shell with the fonts inlined), `app.<build>.js` (the script, content-hashed, minified with esbuild when it's
+installed; browsers cache compiled code for external scripts, never inline ones), `public/` and a stamped `sw.js`.
+`--inline` puts the script back inside the page (one self-contained file; the Artifact copy always does):
 
 | File | Namespace | Owner | What |
 |---|---|---|---|
@@ -125,7 +127,13 @@ Main calls each hook if it exists, fenced in try/catch:
 - **`bake()`** (Patch, Scene): after every layout. May return a Promise; keep drawing the old canvases until the
   new ones are ready. Must be idempotent. Main emits `baked` when both resolve.
 - **`update(dt)`** every drawn frame (real seconds, ≤ 0.05) in the order Patch → Scene → Dial → UI.
-  The frame is capped at `QUALITY[QL].fps` (30 on the low tiers): never assume 60.
+  The room is calm most of the time, so main draws it at **30 fps** (20 in heads-down) and boosts to the quality
+  tier's full rate (`QUALITY[QL].fps`) for a few seconds around moments: `timer:done`, `rogue:capture`, `harvest`,
+  `scene:tap`, `patch:unlock`, `hoodie`, `timer:start`, `ui:sheet`. Never assume 60. DOM animations (winding,
+  Bug Hunt, sheets) run on the compositor and aren't capped.
+- **Boot order on screen:** the controls appear with the first layout (`html.ui`); the room fades in when Patch's
+  and the Scene's bakes resolve (`html.ready`, the `ready` event). Rasterising SVG blocks the main thread, so a slow
+  phone shows a working timer before the art is done. `__pomo.boot()` has the timings.
 - **`Scene.draw(ctx)`** every drawn frame: the whole canvas. The Scene calls `Patch.draw(...)` inside it.
 - Boot emits `boot` after init, then `ready` after the first layout, bake and fonts. `window.__pomo.ready` turns true.
 - The Engine does **not** run on the frame loop: it keeps its own timer (§8.1), so time is right even when frames stop.
@@ -177,7 +185,7 @@ While a sheet is open (`UI.busy()`), the Dial ignores keys.
 | `settings` | `{key, value}` | Engine → all (`key` undefined = everything changed) |
 | `data` | `{op: 'import'|'clear'|'migrated'|'seed', n}` | Engine → all: resync everything from `DB` |
 | `stats` | | Engine → UI, Changelog (refresh) |
-| `scene:tap` | `{id, x, y}` | Scene → Patch, Snd, others. ids: `patch plant window mug screens radio jar` |
+| `scene:tap` | `{id, x, y}` | Scene → Patch, Snd, others. ids: `patch plant window mug screens radio jar`, and `duck` (the rubber duck, wide layouts only) |
 | `harvest` | `{x, y, r}` | Dial → Scene: fly the ripe tomato from (x, y) CSS px to the plant |
 | `focusmode` | `{on}` | Dial → UI, Scene, Patch |
 | `activity` | `{id, phase: 'start'|'end', score?, done?}` | Dial → Patch (pose), Scene, Snd, Engine-facing calls are direct |
@@ -431,9 +439,12 @@ border and a bold pictogram, one per `TEXT.patches` id; Patch draws these on her
 ## 10. Testing hooks and the definition of done
 
 - `window.__pomo` (main): `ready VERSION BUS TIMER LAYOUT QUALITY TEXT DB QL ERR mods emit start pause toggle reset
-  skip finish wind speed sheet close activity focusMode seed quality layout perf perfReset errors stop`.
+  skip finish wind speed sheet close activity focusMode seed quality layout perf perfReset errors boot boost stop`.
 - URL: `?speed=60` (Engine time multiplier) · `?hour=22` · `?q=0..3` · `?dev=1` · `?nosw=1`.
 - Tools: `tools/shot.mjs` (steps, screenshots, console + module errors), `tools/perf.mjs` (throttled phases).
+  Steps split on `;`, so write `\;` for a semicolon inside an `eval`; perf phases split on `|`. Screenshots run in
+  `America/Los_Angeles` (`--tz` to change). The canvas is software-rendered in headless Chromium, so frame *gaps*
+  there overstate what a phone's GPU does; judge your module by its JS *work*.
 - `node --test` (from the repo root; it finds `test/*.test.mjs`) (the Engine's unit tests: the timer, away-and-back, cycles, every patch rule, stats, migration).
 - **Done means:** your module works in isolation and with every other real module; zero console errors and zero
   `__pomo.errors()` in your flows at all four sizes and both themes; reduced motion works; your perf numbers are inside
