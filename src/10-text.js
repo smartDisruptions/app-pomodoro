@@ -213,7 +213,10 @@ const TEXT = {
     task_done_estimate: ['Right on estimate. That never happens. Screenshot it.'],
     task_active: ['{task}. Got it.'],
 
-    patch_unlock: ['New patch: {patch}. Sewing it on.', 'Look at that. {patch}. My hoodie’s getting heavy.'],
+    patch_unlock: ['New patch: {patch}. Sew it on my hoodie?', 'Look at that. {patch}. I’d wear it.'],
+    patch_unlock_many: ['{n} new patches. {patch} and friends. I need a bigger hoodie.', '{n} patches at once? {patch} leads the parade.'],
+    sewn: ['Sewn on. It suits me, right?', 'Fresh patch. The hoodie approves.'],
+    wake: ['Wasn’t asleep. I was compiling with my eyes closed.', 'I’m up. I was resting my glasses.'],
     focusmode_on: ['Heads down. I’ll keep the lights low.'],
 
     breathe_start: ['Breathe with me. In for four.'],
@@ -225,6 +228,18 @@ const TEXT = {
     bughunt_start: ['Bagu got loose. Tap them. Careful, they split.'],
     bughunt_end: ['{score} squashed. The test suite thanks you.'],
     bughunt_test: ['A test! Somebody actually wrote one.'],
+
+    // the Changelog (Engine)
+    log_empty: ['Empty changelog. Best kind. Let’s write line one.'],
+    log_week_empty: ['Nothing shipped this week yet. One tomato fixes that.'],
+    log_top_bazu: ['Bazu again. The shiny thing will still shine after this tomato.'],
+    log_top_fukusei: ['Fukusei’s top. Most of this week’s “urgent” wasn’t.'],
+    log_top_bagu: ['Bagu leads. Write them down. Chasing them makes more.'],
+    log_top_kusarigumo: ['Kusarigumo keeps chaining you to other people’s asks. Batch them.'],
+    log_top_zatsu: ['Zatsu’s winning. The feed refills itself. It doesn’t need you.'],
+    log_top_kemuri: ['Kemuri keeps selling someday. Move one idea onto the task list.'],
+    log_rogues_quiet: ['No rogues this week. Either you’re locked in or they’re hiding.'],
+    log_rogues_none: ['No rogues logged yet. When one shows up mid-tomato, I’ll bag it.'],
 
     reflect_low: ['Some tomatoes are bruised. Still counts.', 'Rough one. You finished it anyway.'],
     reflect_mid: ['Steady wins.', 'Fine is underrated.'],

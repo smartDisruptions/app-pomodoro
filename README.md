@@ -13,7 +13,7 @@ achievements) moves in automatically on first open; the old data is left untouch
 ```bash
 node build.mjs                       # → dist/ (index.html + icons, manifest, audio, sw.js)
 node tools/serve.mjs dist 5173       # http://127.0.0.1:5173/
-node --test test/                    # the Engine's unit tests
+node --test                          # the unit tests (finds test/*.test.mjs)
 ```
 
 No `npm install`: there are no dependencies. Deployed on Vercel as a static site (`vercel.json`: `node build.mjs`, output `dist/`).

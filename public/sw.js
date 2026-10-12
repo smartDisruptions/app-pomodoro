@@ -2,12 +2,17 @@
 // build.mjs replaces __BUILD__ with the build hash, so every deploy gets a fresh cache and old ones are dropped.
 // Pages: network first (3 s), then the cached copy. Everything else same-origin: cache first, then network.
 const CACHE = 'pomo-__BUILD__';
+const AUDIO = 'pomo-audio-1';   // bump only when a file in public/audio changes
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL).catch(() => {})).then(() => self.skipWaiting()));
 });
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => { for (const c of cs) if ('focus' in c) return c.focus(); return self.clients.openWindow('./'); }));
+});
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith('pomo-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith('pomo-') && k !== CACHE && k !== AUDIO).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 const timeout = (ms) => new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
 self.addEventListener('fetch', (e) => {
@@ -16,6 +21,10 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
   if (req.headers.has('range')) return;            // media range requests go straight to the network
+  if (/\/audio\/[^/]+\.mp3$/.test(url.pathname)) {
+    e.respondWith(caches.open(AUDIO).then((c) => c.match(req).then((hit) => hit || fetch(req).then((rsp) => { if (rsp.ok && rsp.status === 200) c.put(req, rsp.clone()); return rsp; }))));
+    return;
+  }
   if (req.mode === 'navigate' || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/')) {
     e.respondWith(Promise.race([fetch(req), timeout(3000)]).then((rsp) => {
       const copy = rsp.clone(); caches.open(CACHE).then((c) => c.put('index.html', copy)).catch(() => {});

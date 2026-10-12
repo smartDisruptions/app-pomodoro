@@ -12,7 +12,7 @@ export const opts = (argv) => {
   return {
     dir: path.resolve(o('dir', 'dist')), out: path.resolve(o('out', '.shots')), size: o('size', '390x844'), dpr: +o('dpr', '2'),
     query: o('query', ''), throttle: +o('throttle', '1'), touch: argv.includes('--touch'), quiet: argv.includes('--quiet'),
-    v1: o('v1', ''), keep: o('keep', ''), steps: o('steps', ''), phases: o('phases', ''), reduced: argv.includes('--reduced'), dark: o('scheme', 'dark'),
+    v1: o('v1', ''), keep: o('keep', ''), steps: o('steps', ''), phases: o('phases', ''), reduced: argv.includes('--reduced'), dark: o('scheme', 'dark'), tz: o('tz', 'America/Los_Angeles'),
   };
 };
 
@@ -20,7 +20,7 @@ export async function open(O) {
   mkdirSync(O.out, { recursive: true });
   const [W, H] = O.size.split('x').map(Number);
   const browser = await chromium.launch({ executablePath: CHROME, args: ['--autoplay-policy=no-user-gesture-required'] });
-  const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: O.dpr, hasTouch: O.touch, isMobile: O.touch, reducedMotion: O.reduced ? 'reduce' : 'no-preference', colorScheme: O.dark === 'light' ? 'light' : 'dark' });
+  const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: O.dpr, hasTouch: O.touch, isMobile: O.touch, reducedMotion: O.reduced ? 'reduce' : 'no-preference', colorScheme: O.dark === 'light' ? 'light' : 'dark', timezoneId: O.tz });
   // seed localStorage before the app boots: --v1 file.json (old app keys, for migration) or --keep file.json (a saved pomo2 DB)
   const seed = {};
   if (O.v1) Object.assign(seed, JSON.parse(readFileSync(O.v1, 'utf8')));

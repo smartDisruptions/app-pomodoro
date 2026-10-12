@@ -77,7 +77,7 @@ One HTML page: a full-bleed canvas (`#scene`) for Patch's room, and a DOM layer 
 | `src/60-ui.js` | `UI` | UI agent | top bar, dock, sheets, tasks, patches, settings, capture, reflect, onboarding, toasts |
 | `src/99-main.js` | `MAIN` | orchestrator | boot, the frame loop, input routing, keys, quality, `window.__pomo` |
 | `shell.html`, `public/*`, `build.mjs`, `tools/*` | — | orchestrator | page shell, icons, manifest, service worker, tooling |
-| `test/*.test.mjs` | — | Engine agent (others may add their own `test/<module>.test.mjs`) | `node --test test/` |
+| `test/*.test.mjs` | — | Engine agent (others may add their own `test/<module>.test.mjs`) | `node --test` (from the repo root; it finds `test/*.test.mjs`) |
 
 ## 3. Shared globals (`00-core.js` — read it, it's short)
 
@@ -390,7 +390,8 @@ mug screens radio jar` (the window cycles `settings.weather`; the radio cycles `
 border and a bold pictogram, one per `TEXT.patches` id; Patch draws these on her hoodie).
 
 - **Sheet system:** renders `SHEETS[id]` (`title`, `size: 'tall'|'half'|'auto'`, `render(body, arg)`, `opened(arg)`,
-  `closed()`); bottom sheet on phones (drag down or tap the scrim to close), right panel when `LAYOUT.wide`; focus
+  `closed()`; optional: `retarget(arg)` (re-opened while open), `refresh()`, `esc() → bool` (consume Esc), `key(e)`,
+  `focus(panel)`, `bare: true` (no title row)); bottom sheet on phones (drag down or tap the scrim to close), right panel when `LAYOUT.wide`; focus
   trap, Esc, returns focus to the opener; emits `ui:sheet`. One sheet at a time; `confirm` stacks above.
 - **Top bar:** the wordmark; today's tomatoes vs goal (a mini tomato + "3/8"); the streak (flame + days); mute;
   heads-down. Fades away in heads-down. **Dock:** Tasks · Changelog · Patches · Settings, with a dot on Patches when
@@ -433,7 +434,7 @@ border and a bold pictogram, one per `TEXT.patches` id; Patch draws these on her
   skip finish wind speed sheet close activity focusMode seed quality layout perf perfReset errors stop`.
 - URL: `?speed=60` (Engine time multiplier) · `?hour=22` · `?q=0..3` · `?dev=1` · `?nosw=1`.
 - Tools: `tools/shot.mjs` (steps, screenshots, console + module errors), `tools/perf.mjs` (throttled phases).
-- `node --test test/` (the Engine's unit tests: the timer, away-and-back, cycles, every patch rule, stats, migration).
+- `node --test` (from the repo root; it finds `test/*.test.mjs`) (the Engine's unit tests: the timer, away-and-back, cycles, every patch rule, stats, migration).
 - **Done means:** your module works in isolation and with every other real module; zero console errors and zero
   `__pomo.errors()` in your flows at all four sizes and both themes; reduced motion works; your perf numbers are inside
   the budget at 4×; your report is written.

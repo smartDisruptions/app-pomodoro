@@ -97,7 +97,7 @@ function copyDir(from, to) {
   for (const f of readdirSync(from)) {
     const a = path.join(from, f), b = path.join(to, f), st = statSync(a);
     if (st.isDirectory()) { if (f !== 'fonts') copyDir(a, b); continue; }
-    if (f === 'sw.js' || f.startsWith('.')) continue;
+    if (f === 'sw.js' || f.startsWith('.') || f.endsWith('.md')) continue;
     copyFileSync(a, b); copied++; bytes += st.size;
   }
 }

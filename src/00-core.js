@@ -325,7 +325,8 @@ function freshDB() {
     rogues: [],         // { id, kind (TEXT.rogues id), note, at (ms), sessionId, done }
     patches: {},        // patch id → unlocked at (ms)
     hoodie: [],         // up to 4 patch ids sewn on Patch's hoodie, oldest first
-    counters: { breathe: 0, bugBest: 0, bugTotal: 0, stretch: 0, window: 0, abandoned: 0 },
+    archive: [],        // shipped tasks moved out by "Clear shipped" (kept so the Changelog still counts them; capped at 500)
+    counters: { breathe: 0, bugBest: 0, bugTotal: 0, stretch: 0, window: 0, abandoned: 0, abandonedAt: 0 },
     timer: null,        // a TIMER snapshot, so a reload mid-session carries on (Engine)
     meta: { firstOpen: Date.now(), lastOpen: 0, onboarded: false, migratedV1: false, v1Sessions: 0 },
   };

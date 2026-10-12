@@ -5,7 +5,7 @@
   without Josh's say-so; if they're wrong, fix the doc in the same change.
 - **No dependencies, no framework.** Vanilla JS modules in `src/`, joined by `node build.mjs` into one HTML file.
   Each module declares one top-level `const` namespace. Words live in `src/10-text.js`.
-- **Check every change:** `node build.mjs --check`, `node --test test/`, then look at it:
+- **Check every change:** `node build.mjs --check`, `node --test`, then look at it:
   `node tools/shot.mjs --dir dist --out .shots --steps "wait 900; shot home"` (and `tools/perf.mjs --throttle 4`).
   It must run fast on an old phone: budgets in CONTRACT.md §9.
 - **Deploys:** Vercel builds `main` to production (the site smartdisruptions.com links to it). Work on a branch, get

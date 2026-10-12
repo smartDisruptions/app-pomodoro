@@ -2,6 +2,7 @@
 // Drive a built dist/ in headless Chromium: run steps, take screenshots, report console errors and module errors.
 //   node tools/shot.mjs --dir dist --out .shots --steps "wait 800; shot home; start; wait 1200; shot running; perf"
 // Options: --size 390x844 --dpr 2 --touch --throttle 4 --query "hour=22&dev=1" --v1 test/fixtures/v1.json --reduced --scheme light
+//          --tz America/Los_Angeles (the default; headless Chromium would otherwise run in UTC)
 // Sizes to check: 390x844 (default), 375x667, 844x390 (phone landscape), 1440x900 --dpr 1 (desktop).
 import { opts, open, run } from './lib.mjs';
 const O = opts(process.argv.slice(2));

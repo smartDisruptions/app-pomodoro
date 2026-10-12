@@ -134,10 +134,13 @@ const MAIN = (() => {
   }
 
   // ── boot ──
+  const BOOT = { init: {}, bake: 0, fonts: 0, ready: 0 };
   async function boot() {
+    const t0 = performance.now();
     document.documentElement.dataset.q = String(QL);
     layout();
-    for (const m of mods()) try1(m, 'init');
+    const names = ['Engine', 'Snd', 'Patch', 'Scene', 'Dial', 'UI'];
+    mods().forEach((m, i) => { const t = performance.now(); try1(m, 'init'); BOOT.init[names[i]] = +(performance.now() - t).toFixed(1); });
     applyTheme();
     applyQualitySetting();
     applyMotion();
@@ -145,8 +148,12 @@ const MAIN = (() => {
     registerSW();
     BUS.emit('boot', {});
     raf = requestAnimationFrame(frame);
+    let t = performance.now();
     await relayout();
+    BOOT.bake = +(performance.now() - t).toFixed(1); t = performance.now();
     try { if (document.fonts && document.fonts.ready) await Promise.race([document.fonts.ready, wait(1.5)]); } catch (e) {}
+    BOOT.fonts = +(performance.now() - t).toFixed(1);
+    BOOT.ready = +performance.now().toFixed(1); BOOT.boot = +(performance.now() - t0).toFixed(1);
     ready = true;
     document.documentElement.classList.add('ready');
     BUS.emit('ready', {});
@@ -169,6 +176,7 @@ const MAIN = (() => {
     perf: () => ({ work: stat(WORK, wn), gap: stat(GAP, wn), QL, DPR: +DPR.toFixed(2), fps: QUALITY[QL].fps }),
     perfReset: () => { wn = 0; wi = 0; },
     errors: () => Object.assign({}, ERR),
+    boot: () => JSON.parse(JSON.stringify(BOOT)),
     stop: () => { alive = false; cancelAnimationFrame(raf); raf = 0; },
   };
 
