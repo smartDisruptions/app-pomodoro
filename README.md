@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Patch's Pomodoro
 
-## Getting Started
+A pomodoro timer starring **Patch**, the hacker from the Smart Disruptions Neo Dojo cast. Wind the tomato, watch it
+ripen while you focus, quarantine your distractions (the six Neo Dojo rogues), grow tomatoes on Patch's windowsill,
+and sew the patches you earn onto her hoodie. Lo-fi on. Works offline. One small file, no dependencies, built to run
+fast on an old phone.
 
-First, run the development server:
+Version 2 rebuilds the March 2026 Next.js app from the ground up. Your v1 history (sessions, tasks, settings,
+achievements) moves in automatically on first open; the old data is left untouched.
+
+## Run it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+node build.mjs                       # → dist/ (index.html + icons, manifest, audio, sw.js)
+node tools/serve.mjs dist 5173       # http://127.0.0.1:5173/
+node --test test/                    # the Engine's unit tests
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+No `npm install`: there are no dependencies. Deployed on Vercel as a static site (`vercel.json`: `node build.mjs`, output `dist/`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Dev URLs: `?speed=60` (time runs 60× faster) · `?hour=22` (pin the time of day) · `?q=0..3` (quality tier) ·
+`?dev=1` · `?nosw=1`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## How it's built
 
-## Learn More
+- `CONTRACT.md` — how the modules fit: ownership, APIs, events, the speed budget, testing. Read it first.
+- `DESIGN.md` — the idea, the look, the motion, Patch, the sound, the words.
+- `src/` — one module per file, concatenated in order into one `'use strict'` IIFE by `build.mjs`:
+  `00-core` (shared tools) · `10-text` (every word Patch says) · `20-engine` (timer, data, stats) · `30-audio` ·
+  `40-patch` (Patch herself) · `45-scene` (her room, on a canvas) · `50-dial` (the tomato timer) · `60-ui` (sheets) ·
+  `99-main` (boot and the frame loop).
+- `stubs/` — a minimal working version of every module (the app runs end to end on stubs alone).
+- `tools/shot.mjs` (headless screenshots from a step script) and `tools/perf.mjs` (frame cost under CPU throttling).
+- `public/audio/AUDIO.md` — where every sound came from.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Patch and the rogues are from the Neo Dojo cast by [Smart Disruptions](https://smartdisruptions.com).
